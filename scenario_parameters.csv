@@ -1,0 +1,6 @@
+scenario_id,scenario_name,n_males_cryo,description,biotechnology,cout_relatif,faisabilite
+S0,Controle,0,Aucune sauvegarde - perte totale du noyau,Aucune,0,NA
+S1,Minimal,5,Conservation de la semence de 5 mâles,Cryoconservation semence,Faible,Haute
+S2,Intermediaire,15,Conservation de la semence de 15 mâles,Cryoconservation semence,Modere,Haute
+S3,Extensif,30,Conservation de la semence de 30 mâles,Cryoconservation semence,Eleve,Moderee
+S4,Optimise,15,15 mâles sélectionnés pour maximiser la diversité génétique (OGC),Cryoconservation + génotypage,Modere-Eleve,Moderee
