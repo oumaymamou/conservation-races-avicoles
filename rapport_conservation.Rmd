@@ -1,0 +1,412 @@
+---
+title: |
+  Optimisation des stratégies de sauvegarde génétique  
+  pour les races avicoles locales françaises
+subtitle: "Simulation avec MoBPS — Exploration de scénarios de cryoconservation"
+author: "Oumayma Mourabit"
+date: "01/04/2026"
+output:
+  html_document:
+    theme: flatly
+    highlight: kate
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 3
+    number_sections: true
+    fig_caption: true
+    code_folding: show
+  pdf_document:
+    toc: true
+    number_sections: true
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo       = TRUE,
+  warning    = FALSE,
+  message    = FALSE,
+  fig.align  = "center",
+  fig.width  = 9,
+  fig.height = 6,
+  cache      = TRUE
+)
+
+# Packages
+library(MoBPS)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+
+# Palette cohérente
+palette_sc <- c(
+  S0 = "#d73027", S1 = "#fc8d59",
+  S2 = "#fee090", S3 = "#91bfdb", S4 = "#4575b4"
+)
+labels_sc <- c(
+  S0 = "S0 — Aucune sauvegarde",
+  S1 = "S1 — Minimal (5 ♂)",
+  S2 = "S2 — Intermédiaire (15 ♂)",
+  S3 = "S3 — Extensif (30 ♂)",
+  S4 = "S4 — Optimisé (15 ♂, OGC)"
+)
+```
+
+---
+
+# Contexte et problématique
+
+## Les races avicoles locales françaises : un patrimoine menacé
+
+La France abrite une diversité remarquable de races avicoles locales — Gauloise Dorée, Barbezieux, Marans, Bresse, Faverolles, La Flèche, et bien d'autres. Ces races constituent une part irremplaçable de la **biodiversité domestique nationale** : elles sont intimement liées à des terroirs, des savoir-faire et des histoires régionales, et représentent des réservoirs de diversité génétique potentiellement utiles face aux défis futurs (adaptation climatique, résistance aux maladies).
+
+Cependant, leurs effectifs sont généralement faibles — souvent quelques dizaines à quelques centaines d'individus reproducteurs — et leurs **noyaux de conservation sont fréquemment concentrés sur un seul site**. Cette situation les rend extrêmement vulnérables à des événements catastrophiques.
+
+## Le risque épidémique
+
+L'influenza aviaire hautement pathogène (IAHP, ou "grippe aviaire") représente aujourd'hui une menace concrète et récurrente. Depuis 2021, plusieurs vagues épizootiques majeures ont frappé l'Europe, conduisant à l'abattage préventif de dizaines de millions de volailles. Pour une race locale dont le noyau de conservation n'est pas sauvegardé, une telle épizootie peut signifier la **disparition irrémédiable** de la race.
+
+## La solution : la cryoconservation ex situ
+
+Une réponse à ce risque consiste à constituer des **cryobanques de ressources génétiques** : congélation de semences de mâles reproducteurs (voire de cellules germinales primordiales), permettant, en cas de perte du noyau vivant, de reconstruire une population à partir du matériel biologique sauvegardé.
+
+La question centrale est alors : **quelle stratégie de sauvegarde adopter ?** Combien de mâles inclure ? Faut-il privilégier la quantité ou sélectionner les mâles les plus génétiquement diversifiés ? Quel effectif minimum garantit une récupération satisfaisante de la diversité génétique ?
+
+## Objectifs de ce projet
+
+Ce projet explore, via simulation stochastique avec le package R **MoBPS** (Pook *et al.*, 2020), plusieurs scénarios de sauvegarde pour une population avicole locale typique. Les objectifs sont :
+
+1. Établir une **population de référence** représentative d'un noyau de conservation local
+2. Comparer différents **scénarios de cryoconservation** (S0 à S4) selon le nombre et le mode de sélection des mâles sauvegardés
+3. Évaluer quantitativement la **capacité de chaque scénario à récupérer la diversité génétique** initiale
+4. Dégager des **recommandations pratiques** pour l'optimisation des stratégies de sauvegarde
+
+> **Note méthodologique** : Ce projet constitue une exploration méthodologique basée sur des populations simulées avec des paramètres fictifs mais représentatifs. Il ne s'appuie pas sur des données empiriques de races françaises réelles. Les résultats illustrent la démarche et ne constituent pas des recommandations pour des races spécifiques.
+
+---
+
+# Matériel et méthodes
+
+## Le simulateur MoBPS
+
+Le package R **MoBPS** (*Modular Breeding Program Simulator*, Pook *et al.*, 2020) fournit un cadre flexible et computationnellement efficace pour simuler des programmes d'élevage complexes. Il est notamment utilisé en recherche pour comparer des schémas de sélection et évaluer leur impact génétique et économique.
+
+Les deux fonctions centrales de MoBPS sont :
+
+- `creating.diploid()` : initialise une population fondatrice avec des paramètres génomiques et de trait définis
+- `breeding.diploid()` : simule les actions de reproduction (sélection, accouplement, phénotypage) à chaque génération
+
+```{r mobps-example, eval=FALSE}
+# Exemple minimal MoBPS
+library(MoBPS)
+
+# Création d'une population de base : 100 individus, 1000 SNP
+pop <- creating.diploid(nsnp = 1000, nindi = 100)
+
+# Simulation d'une génération de reproduction
+pop <- breeding.diploid(pop, breeding.size = 100, selection.size = c(10, 40))
+```
+
+## Population modélisée
+
+La population simulée représente un noyau de conservation typique d'une race avicole locale française :
+
+```{r params-table, echo=FALSE}
+params <- data.frame(
+  Paramètre = c(
+    "Nombre de mâles reproducteurs",
+    "Nombre de femelles reproductrices",
+    "Effectif total",
+    "Nombre de chromosomes simulés",
+    "Longueur de chaque chromosome",
+    "Nombre de marqueurs SNP",
+    "Nombre de QTL additifs",
+    "Héritabilité du trait simulé",
+    "Générations de conservation (pré-catastrophe)"
+  ),
+  Valeur = c("20", "80", "100", "5", "1,5 Morgan", "1 000", "30", "0,35", "5")
+)
+
+kable(params, caption = "Paramètres de la population simulée",
+      col.names = c("Paramètre", "Valeur")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = FALSE)
+```
+
+Ces paramètres sont représentatifs mais simplifiés. Un génome de poulet réel comporte ~30 chromosomes autosomaux et environ 10 000 à 60 000 SNP selon les puces de génotypage utilisées.
+
+## Scénarios de sauvegarde
+
+Cinq scénarios ont été définis, variant selon le nombre de mâles sauvegardés en cryobanque et la stratégie de sélection de ces mâles :
+
+```{r scenarios-table, echo=FALSE}
+scenarios_tab <- read.csv("../data/scenario_parameters.csv")
+kable(scenarios_tab %>% 
+        select(scenario_id, scenario_name, n_males_cryo, description, biotechnology, cout_relatif),
+      caption = "Scénarios de sauvegarde simulés",
+      col.names = c("ID", "Nom", "Mâles cryo.", "Description", "Biotechnologie", "Coût relatif")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = TRUE) %>%
+  column_spec(1, bold = TRUE) %>%
+  row_spec(1, color = "white", background = "#d73027") %>%
+  row_spec(5, background = "#dde9f5")
+```
+
+**Spécificité du scénario S4** : à effectif de mâles sauvegardés identique à S2 (15 mâles), S4 incorpore une étape de **sélection génétiquement optimisée** visant à maximiser la diversité génétique représentée dans les semences. Dans un contexte réel, cela s'appuierait sur une analyse de la matrice de parenté génomique (par exemple via la méthode OGC — *Optimal Genetic Contributions*) pour sélectionner les mâles les plus génétiquement distants les uns des autres.
+
+## Métriques d'évaluation
+
+Les indicateurs suivants ont été calculés avant la catastrophe (référence) et après reconstruction :
+
+- **Hétérozygotie observée (H_obs)** : proportion moyenne d'hétérozygotes par locus — indicateur direct de la diversité génétique
+- **Coefficient de kinship moyen** : parenté génomique moyenne entre individus — proxy de la consanguinité
+- **Proportion de loci polymorphes** : fraction des SNP présentant au moins deux allèles — indicateur de la diversité allélique
+- **Taux de récupération** : ratio de chaque indicateur post-reconstruction vs. référence pré-catastrophe (en %)
+
+## Reproductibilité
+
+Toutes les simulations ont été réalisées avec une graine aléatoire fixe (`set.seed(42)` pour la population de base), et `N_SIM = 5` répétitions par scénario pour estimer la variabilité stochastique. Dans une étude complète, on utiliserait `N_SIM ≥ 50`.
+
+---
+
+# Résultats
+
+```{r load-results}
+# Chargement et recalcul des résultats
+results_df  <- readRDS("../data/results_df.rds")
+summary_df  <- readRDS("../data/summary_df.rds")
+div_avant   <- readRDS("../data/diversity_avant.rds")
+
+H_ref    <- div_avant$H_obs
+poly_ref <- div_avant$prop_poly
+
+# Recalcul du taux de récupération
+results_df$recovery_H_obs <- results_df$H_obs / H_ref * 100
+
+summary_df <- results_df %>%
+  group_by(scenario_id, scenario, n_males, description) %>%
+  summarise(
+    H_obs_mean         = mean(H_obs),
+    H_obs_sd           = sd(H_obs),
+    kinship_mean_mean  = mean(kinship_mean),
+    prop_poly_mean     = mean(prop_poly),
+    recovery_H_mean    = mean(recovery_H_obs, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Factorisation
+results_df$scenario_id <- factor(results_df$scenario_id, levels = c("S0","S1","S2","S3","S4"))
+summary_df$scenario_id <- factor(summary_df$scenario_id, levels = c("S0","S1","S2","S3","S4"))
+```
+
+## Diversité de la population de référence
+
+Avant la catastrophe simulée, la population présentait les caractéristiques suivantes après 5 générations de gestion conservatoire :
+
+```{r ref-table, echo=FALSE}
+kable(div_avant %>%
+        mutate(
+          H_obs     = round(H_obs, 4),
+          kinship_mean = round(kinship_mean, 4),
+          prop_poly = paste0(round(prop_poly * 100, 1), "%")
+        ) %>%
+        select(H_obs, kinship_mean, prop_poly, n_poly),
+      caption = "Indicateurs de diversité de la population de référence (avant catastrophe)",
+      col.names = c("H_obs", "Kinship moy.", "% Loci polymorphes", "N loci polymorphes")) %>%
+  kable_styling(bootstrap_options = c("striped","hover"), full_width = FALSE)
+```
+
+## Hétérozygotie observée après reconstruction
+
+```{r fig1-hobs, fig.cap="Hétérozygotie observée (H_obs) après reconstruction, selon le scénario de sauvegarde. La ligne pointillée représente la valeur de référence avant la catastrophe. Les boîtes à moustaches résument la distribution sur N répétitions."}
+ggplot(results_df, aes(x = scenario_id, y = H_obs, fill = scenario_id)) +
+  geom_boxplot(alpha = 0.8, outlier.shape = 21, outlier.size = 2) +
+  geom_hline(yintercept = H_ref, linetype = "dashed", color = "black",
+             linewidth = 0.8, alpha = 0.7) +
+  annotate("text", x = 0.6, y = H_ref + 0.005,
+           label = sprintf("Référence pré-catastrophe (H_obs = %.3f)", H_ref),
+           hjust = 0, size = 3.2, color = "black") +
+  scale_fill_manual(values = palette_sc, guide = "none") +
+  scale_x_discrete(labels = labels_sc) +
+  labs(x = "Scénario de sauvegarde",
+       y = "Hétérozygotie observée (H_obs)") +
+  theme_bw(base_size = 12) +
+  theme(plot.title = element_text(face = "bold"),
+        axis.text.x = element_text(size = 9),
+        panel.grid.minor = element_blank())
+```
+
+La figure montre clairement un gradient de récupération de la diversité en fonction du scénario :
+
+- **S0** (aucune sauvegarde) aboutit à une hétérozygotie proche de zéro — la population ne peut se reconstruire
+- **S1** à **S3** montrent une amélioration progressive avec l'augmentation du nombre de mâles sauvegardés
+- **S4** permet une récupération supérieure à S2 (même effectif de mâles), validant l'intérêt d'une approche de sélection génétiquement raisonnée
+
+## Taux de récupération de la diversité
+
+```{r fig2-recovery, fig.cap="Taux de récupération de l'hétérozygotie (% de la valeur de référence pré-catastrophe). Les barres d'erreur représentent ± 1 écart-type inter-répétitions. La ligne pointillée à 100% correspond à une récupération complète."}
+summary_rep <- results_df %>%
+  group_by(scenario_id) %>%
+  summarise(mean_rec = mean(recovery_H_obs, na.rm = TRUE),
+            sd_rec   = sd(recovery_H_obs, na.rm = TRUE))
+
+ggplot(summary_df, aes(x = scenario_id, y = recovery_H_mean, fill = scenario_id)) +
+  geom_col(alpha = 0.85, color = "white", linewidth = 0.3) +
+  geom_errorbar(data = summary_rep,
+                aes(x = scenario_id, y = mean_rec,
+                    ymin = mean_rec - sd_rec, ymax = mean_rec + sd_rec),
+                width = 0.2, inherit.aes = FALSE) +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "gray40") +
+  geom_text(aes(label = sprintf("%.1f%%", recovery_H_mean),
+                y = recovery_H_mean + 3),
+            size = 4, fontface = "bold") +
+  scale_fill_manual(values = palette_sc, guide = "none") +
+  scale_x_discrete(labels = labels_sc) +
+  scale_y_continuous(limits = c(0, 115), breaks = seq(0, 100, 20)) +
+  labs(x = "Scénario", y = "Taux de récupération (%)") +
+  theme_bw(base_size = 12) +
+  theme(axis.text.x = element_text(size = 9),
+        panel.grid.minor = element_blank())
+```
+
+## Relation dose-réponse : nombre de mâles sauvegardés
+
+```{r fig3-dose-response, fig.cap="Relation entre le nombre de mâles sauvegardés en cryobanque et le taux de récupération de l'hétérozygotie. S4 illustre l'apport d'une sélection optimisée par rapport à une sélection aléatoire (S2) à effectif identique."}
+ggplot(summary_df %>% filter(n_males > 0),
+       aes(x = n_males, y = recovery_H_mean, color = scenario_id)) +
+  geom_smooth(aes(group = 1), method = "lm", se = TRUE,
+              color = "gray60", linetype = "dotted", linewidth = 0.8) +
+  geom_point(size = 6, alpha = 0.9) +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "gray40", alpha = 0.5) +
+  geom_text(aes(label = scenario_id), nudge_y = 3, size = 4, fontface = "bold") +
+  scale_color_manual(values = palette_sc, guide = "none") +
+  scale_x_continuous(breaks = c(5, 15, 30)) +
+  labs(x = "Nombre de mâles cryoconservés",
+       y = "Taux de récupération H_obs (%)") +
+  theme_bw(base_size = 12) +
+  theme(panel.grid.minor = element_blank())
+```
+
+Le scénario S4 (15 mâles, sélection optimisée) surpasse S2 (15 mâles, sélection aléatoire), suggérant qu'à budget constant, une analyse préalable de la structure génétique de la population avant sélection des donneurs de semence peut améliorer significativement l'efficacité de la cryobanque.
+
+## Consanguinité après reconstruction
+
+```{r fig4-kinship, fig.cap="Distribution de la kinship moyenne entre individus après reconstruction. Une kinship élevée indique une consanguinité accrue et donc une réduction de la diversité génétique."}
+ggplot(results_df, aes(x = scenario_id, y = kinship_mean, fill = scenario_id)) +
+  geom_violin(alpha = 0.55, trim = TRUE) +
+  geom_boxplot(width = 0.15, fill = "white", outlier.size = 1.5) +
+  scale_fill_manual(values = palette_sc, guide = "none") +
+  scale_x_discrete(labels = labels_sc) +
+  labs(x = "Scénario", y = "Kinship moyenne inter-individus") +
+  theme_bw(base_size = 12) +
+  theme(axis.text.x = element_text(size = 9),
+        panel.grid.minor = element_blank())
+```
+
+## Tableau de synthèse
+
+```{r summary-table, echo=FALSE}
+kable(summary_df %>%
+        mutate(
+          H_mean_sd    = sprintf("%.4f ± %.4f", H_obs_mean, H_obs_sd),
+          kinship_disp = sprintf("%.4f", kinship_mean_mean),
+          poly_disp    = sprintf("%.1f%%", prop_poly_mean * 100),
+          rec_disp     = sprintf("%.1f%%", recovery_H_mean)
+        ) %>%
+        select(scenario_id, n_males, description, H_mean_sd, kinship_disp, poly_disp, rec_disp),
+      caption = "Résumé des indicateurs de diversité par scénario (moyennes sur N répétitions)",
+      col.names = c("Scénario", "Mâles ♂", "Description",
+                    "H_obs (moy ± SD)", "Kinship moy.",
+                    "% Loci poly.", "Récupération H")) %>%
+  kable_styling(bootstrap_options = c("striped","hover","condensed"), full_width = TRUE) %>%
+  column_spec(1, bold = TRUE) %>%
+  row_spec(1, background = "#fde0dc") %>%
+  row_spec(5, background = "#dde9f5")
+```
+
+## Analyse statistique
+
+```{r stats-anova}
+# ANOVA — effet du scénario sur H_obs
+model_anova <- aov(H_obs ~ scenario_id, data = results_df)
+kable(broom::tidy(model_anova),
+      digits = 4,
+      caption = "ANOVA — effet du scénario sur l'hétérozygotie observée (H_obs)") %>%
+  kable_styling(bootstrap_options = c("striped","hover"), full_width = FALSE)
+```
+
+```{r stats-tukey}
+# Test de Tukey
+tukey_df <- as.data.frame(TukeyHSD(model_anova)$scenario_id) %>%
+  tibble::rownames_to_column("comparaison") %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4)),
+         signif = case_when(`p adj` < 0.001 ~ "***",
+                             `p adj` < 0.01  ~ "**",
+                             `p adj` < 0.05  ~ "*",
+                             TRUE            ~ "ns"))
+
+kable(tukey_df,
+      caption = "Test HSD de Tukey — comparaisons par paires des scénarios",
+      col.names = c("Comparaison", "Différence", "IC inf.", "IC sup.", "p ajusté", "Signif.")) %>%
+  kable_styling(bootstrap_options = c("striped","hover","condensed"), full_width = FALSE) %>%
+  column_spec(6, bold = TRUE)
+```
+
+---
+
+# Discussion
+
+## Principaux enseignements
+
+Ces simulations exploratoires mettent en lumière plusieurs résultats cohérents avec la littérature sur la conservation génétique des petites populations :
+
+**1. L'absence de sauvegarde est catastrophique (S0).** Sans cryobanque, la perte d'un noyau de conservation entraîne la disparition de la quasi-totalité de la diversité génétique, rendant la reconstruction à partir de zéro quasi-impossible sans apport extérieur.
+
+**2. Un seuil minimal de mâles sauvegardés est nécessaire.** Le scénario S1 (5 mâles) permet une reconstruction mais avec une forte perte de diversité et une consanguinité élevée. Ce résultat est cohérent avec le concept de **taille efficace de population (Ne)** : une base génétique trop étroite amplifie la dérive génétique lors de la reconstruction.
+
+**3. La qualité de la sélection compte autant que la quantité (S4 vs. S2).** À effectif de semences identique, la sélection de mâles génétiquement diversifiés (S4) améliore la récupération de la diversité. Cela justifie un investissement dans la **caractérisation génomique préalable** des noyaux de conservation avant constitution des cryobanques.
+
+**4. Des rendements décroissants au-delà d'un certain seuil.** Le gain entre S2 et S3 (passage de 15 à 30 mâles) est moindre que celui entre S1 et S2, suggérant un seuil de saturation au-delà duquel les gains supplémentaires sont marginaux.
+
+## Limites de l'étude
+
+- **Simplification du génome** : le génome simulé (5 chromosomes, 1000 SNP) est très simplifié par rapport à un génome aviaire réel (~30 chromosomes, des milliers à dizaines de milliers de SNP). Les résultats quantitatifs sont donc indicatifs.
+- **Paramètres fictifs** : les fréquences alléliques et la structure génétique initiale sont simulées, non extraites de données empiriques de races françaises.
+- **Nombre de répétitions limité** : N=5 répétitions par scénario est insuffisant pour des estimations robustes (idéalement N ≥ 50 à 100).
+- **Biotechnologie simplifiée** : la reconstruction depuis semences cryoconservées implique en réalité des contraintes biologiques (taux de fertilité des semences décongelées, délai de reconstruction sur plusieurs générations) qui ne sont pas modélisées ici.
+
+## Perspectives
+
+Ce travail ouvre plusieurs pistes :
+
+- **Extension à des données réelles** : l'import de données génotypiques (fichier VCF ou PLINK) de races avicoles françaises via `creating.diploid()` permettrait des simulations empiriquement fondées
+- **Intégration de l'OGC** : l'implémentation de l'optimisation des contributions génétiques (`ogc.mobps()`) pour le scénario S4 renforcerait la crédibilité de l'approche optimisée
+- **Modélisation des coûts** : MoBPS permet d'associer des coûts aux actions de reproduction, ouvrant la voie à une **analyse coût-efficacité** des différentes stratégies
+- **Comparaison multi-races** : appliquer le même cadre à plusieurs races avec des structures génétiques différentes (races très consanguines vs. plus diversifiées) pour des recommandations différenciées
+
+---
+
+# Références
+
+- Pook T., Schlather M. & Simianer H. (2020). MoBPS: Modular Breeding Program Simulator. *G3: Genes, Genomes, Genetics*, 10(6), 1915–1918. https://doi.org/10.1534/g3.120.401193
+
+- FAO (2015). *The Second Report on the State of the World's Animal Genetic Resources for Food and Agriculture*. Commission on Genetic Resources for Food and Agriculture Assessments. Rome.
+
+- Long X. *et al.* (2022). Poultry genetic heritage cryopreservation and reconstruction: advancement and future challenges. *Journal of Animal Science and Biotechnology*, 13, 100. https://doi.org/10.1186/s40104-022-00768-2
+
+- Leroy G. *et al.* (2006). Genetic diversity of six French meat sheep breeds in relation to their genetic management. *Journal of Animal Breeding and Genetics*, 123(5), 299–310.
+
+- Danchin-Burge C. *et al.* (2012). Evolution of the French cattle breeds genetic diversity using pedigree data. *Genetics Selection Evolution*, 44, 13.
+
+- Lacy R.C. (1987). Loss of genetic diversity from managed populations: interacting effects of drift, mutation, immigration, selection, and population subdivision. *Conservation Biology*, 1(2), 143–158.
+
+---
+
+# Session Info
+
+```{r session-info, echo=FALSE}
+sessionInfo()
+```
