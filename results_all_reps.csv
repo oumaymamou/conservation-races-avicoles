@@ -1,0 +1,26 @@
+"H_obs","kinship_mean","prop_poly","n_poly","scenario","scenario_id","rep","n_males","description","recovery_H_obs","recovery_poly"
+0,0.5,0,0,"S0_controle","S0",1,0,"Aucune sauvegarde (extinction)",0,0
+0,0.5,0,0,"S0_controle","S0",2,0,"Aucune sauvegarde (extinction)",0,0
+0,0.5,0,0,"S0_controle","S0",3,0,"Aucune sauvegarde (extinction)",0,0
+0,0.5,0,0,"S0_controle","S0",4,0,"Aucune sauvegarde (extinction)",0,0
+0,0.5,0,0,"S0_controle","S0",5,0,"Aucune sauvegarde (extinction)",0,0
+0.28098,0.175847509040737,0.811,811,"S1_minimal","S1",1,5,"Sauvegarde minimale (5 mâles)",0,0
+0.27056,0.213069606012608,0.805,805,"S1_minimal","S1",2,5,"Sauvegarde minimale (5 mâles)",0,0
+0.27779,0.212045321438069,0.813,813,"S1_minimal","S1",3,5,"Sauvegarde minimale (5 mâles)",0,0
+0.282,0.192489352778372,0.799,799,"S1_minimal","S1",4,5,"Sauvegarde minimale (5 mâles)",0,0
+0.28987,0.154847990251511,0.831,831,"S1_minimal","S1",5,5,"Sauvegarde minimale (5 mâles)",0,0
+0.28543,0.142932945117154,0.852,852,"S2_intermediaire","S2",1,15,"Sauvegarde intermédiaire (15 mâles)",0,0
+0.29922,0.113129358854876,0.867,867,"S2_intermediaire","S2",2,15,"Sauvegarde intermédiaire (15 mâles)",0,0
+0.30314,0.121996316439143,0.853,853,"S2_intermediaire","S2",3,15,"Sauvegarde intermédiaire (15 mâles)",0,0
+0.30021,0.123685895903412,0.857,857,"S2_intermediaire","S2",4,15,"Sauvegarde intermédiaire (15 mâles)",0,0
+0.29067,0.132148235433258,0.839,839,"S2_intermediaire","S2",5,15,"Sauvegarde intermédiaire (15 mâles)",0,0
+0.2943,0.124100226358572,0.88,880,"S3_extensive","S3",1,30,"Sauvegarde extensive (30 mâles)",0,0
+0.3015,0.113070764687004,0.867,867,"S3_extensive","S3",2,30,"Sauvegarde extensive (30 mâles)",0,0
+0.29816,0.118716298153123,0.867,867,"S3_extensive","S3",3,30,"Sauvegarde extensive (30 mâles)",0,0
+0.30349,0.125838273956871,0.877,877,"S3_extensive","S3",4,30,"Sauvegarde extensive (30 mâles)",0,0
+0.30822,0.100148896447211,0.88,880,"S3_extensive","S3",5,30,"Sauvegarde extensive (30 mâles)",0,0
+0.30877,0.115155570281416,0.868,868,"S4_optimise","S4",1,15,"Sauvegarde optimisée — sélection génétiquement diverse (15 mâles)",0,0
+0.29923,0.121642644279048,0.859,859,"S4_optimise","S4",2,15,"Sauvegarde optimisée — sélection génétiquement diverse (15 mâles)",0,0
+0.29399,0.128308190019058,0.85,850,"S4_optimise","S4",3,15,"Sauvegarde optimisée — sélection génétiquement diverse (15 mâles)",0,0
+0.30235,0.124005117379976,0.869,869,"S4_optimise","S4",4,15,"Sauvegarde optimisée — sélection génétiquement diverse (15 mâles)",0,0
+0.29192,0.133556746099664,0.85,850,"S4_optimise","S4",5,15,"Sauvegarde optimisée — sélection génétiquement diverse (15 mâles)",0,0

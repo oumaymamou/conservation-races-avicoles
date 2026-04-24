@@ -1,0 +1,6 @@
+"scenario_id","scenario","n_males","description","H_obs_mean","H_obs_sd","kinship_mean_mean","prop_poly_mean","recovery_H_mean","recovery_poly_mean"
+"S0","S0_controle",0,"Aucune sauvegarde (extinction)",0,0,0.5,0,0,0
+"S1","S1_minimal",5,"Sauvegarde minimale (5 mâles)",0.28024,0.00700155339906795,0.189659955904259,0.8118,0,0
+"S2","S2_intermediaire",15,"Sauvegarde intermédiaire (15 mâles)",0.295734,0.00739682567051569,0.126778550349569,0.8536,0,0
+"S4","S4_optimise",15,"Sauvegarde optimisée — sélection génétiquement diverse (15 mâles)",0.299252,0.00673864378046502,0.124533653611832,0.8592,0,0
+"S3","S3_extensive",30,"Sauvegarde extensive (30 mâles)",0.301134,0.00527835959366165,0.116374891920556,0.8742,0,0
