@@ -1,24 +1,22 @@
 # =============================================================================
 # Script 01 : Initialisation de la population de base
+# Auteur : oumaymamou - Avril 2026
 # =============================================================================
 
 library(MoBPS)
 library(ggplot2)
 library(dplyr)
 
-cat("=== Initialisation de la population de base ===\n")
-
-N_SNP     <- 1000
-N_MALES   <- 20
-N_FEMALES <- 80
-N_TOTAL   <- N_MALES + N_FEMALES
-N_QTL_ADD <- 30
-
-cat(sprintf("Population : %d mâles + %d femelles = %d individus\n",
-            N_MALES, N_FEMALES, N_TOTAL))
+# Paramètres de simulation
+N_SNP      <- 1000
+N_MALES    <- 20
+N_FEMALES  <- 80
+N_TOTAL    <- N_MALES + N_FEMALES
+N_QTL_ADD  <- 30
 
 set.seed(42)
 
+# Création de la population fondatrice
 population_base <- creating.diploid(
   nsnp       = N_SNP,
   nindi      = N_TOTAL,
@@ -26,12 +24,8 @@ population_base <- creating.diploid(
   verbose    = FALSE
 )
 
-cat(sprintf(" Population créée : %d individus\n",
-            get.nindi(population_base)))
-
-cat("\n--- 5 générations de conservation ---\n")
+# Simulation de 5 générations de conservation (stabilité)
 population <- population_base
-
 for (gen in 1:5) {
   population <- breeding.diploid(
     population,
@@ -39,10 +33,9 @@ for (gen in 1:5) {
     selection.size = c(N_MALES, N_FEMALES),
     verbose        = FALSE
   )
-  cat(sprintf("  Génération %d simulée\n", gen))
 }
 
-cat("\n--- Calcul de la diversité ---\n")
+# Analyse de la diversité génétique initiale
 last_gen    <- length(population$breeding)
 geno_matrix <- get.geno(population, gen = last_gen)
 
@@ -55,11 +48,7 @@ kinship_vals   <- kinship_matrix[upper.tri(kinship_matrix)]
 F_mean_avant   <- mean(kinship_vals, na.rm = TRUE)
 F_sd_avant     <- sd(kinship_vals,   na.rm = TRUE)
 
-cat(sprintf("  H_obs     : %.4f\n", H_obs_avant))
-cat(sprintf("  Kinship   : %.4f ± %.4f\n", F_mean_avant, F_sd_avant))
-cat(sprintf("  Loci poly : %d / %d (%.1f%%)\n",
-            n_poly_avant, N_SNP, prop_poly_avant * 100))
-
+# Sauvegarde des objets de données
 saveRDS(population,     "data/population_avant_catastrophe.rds")
 saveRDS(kinship_matrix, "data/kinship_avant.rds")
 
@@ -72,7 +61,3 @@ diversity_avant <- data.frame(
   n_poly       = n_poly_avant
 )
 saveRDS(diversity_avant, "data/diversity_avant.rds")
-
-cat("\n Données sauvegardées dans data/\n")
-cat("=== Script 01 terminé ===\n")
-cat("Lancer ensuite : source('R/02_simulation_scenarios.R')\n")
